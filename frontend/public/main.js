@@ -8,60 +8,63 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 /* =========================
-   LÉGENDE
+   LEGENDE
 ========================= */
 const legend = L.control({ position: "bottomright" });
 
 legend.onAdd = function () {
   const div = L.DomUtil.create("div", "legend");
   div.innerHTML = `
-    <h4>Activité relative</h4>
+    <h4>Activite relative</h4>
     <div><span style="background:#e5f5e0"></span> Faible</div>
     <div><span style="background:#a1d99b"></span> Moyenne</div>
-    <div><span style="background:#41ab5d"></span> Élevée</div>
-    <div><span style="background:#006d2c"></span> Très élevée</div>
+    <div><span style="background:#41ab5d"></span> Elevee</div>
+    <div><span style="background:#006d2c"></span> Tres elevee</div>
   `;
   return div;
 };
 
-
 legend.addTo(map);
 
 /* =========================
-   WIKI → PAYS (ISO_A2_EH)
+   WIKI -> PAYS (ISO_A2_EH)
 ========================= */
 const wikiToCountry = {
-  arwiki: "EG",      // Égypte (monde arabe, symbolique)
-  arywiki: "MA",     // Maroc
-  cywiki: "GB",      // Pays de Galles → Royaume-Uni
-  dewiki: "DE",      // Allemagne
-  elwiki: "GR",      // Grèce
-  enwiki: "GB",      // Communauté anglophone (symbolique UK)
-  eswiki: "ES",      // Espagne
-  frwiki: "FR",      // France
-  hewiki: "IL",      // Israël
-  hiwiki: "IN",      // Inde
-  huwiki: "HU",      // Hongrie
-  idwiki: "ID",      // Indonésie
-  itwiki: "IT",      // Italie
-  jawiki: "JP",      // Japon
-  ltwiki: "LT",      // Lituanie
-  nlwiki: "NL",      // Pays-Bas
-  papwiki: "NL",     // Curaçao → Pays-Bas (symbolique)
-  rowiki: "RO",      // Roumanie
-  ruwiki: "RU",      // Russie
-  tawiki: "IN",      // Tamil → Inde
-  trwiki: "TR",      // Turquie
-  ttwiki: "RU",      // Tatar → Russie (symbolique)
-  ukwiki: "UA",      // Ukraine
-  urwiki: "PK",      // Pakistan
-  viwiki: "VN",      // Vietnam
-  zhwiki: "CN"       // Chine
+  arwiki: "EG",
+  arywiki: "MA",
+  cywiki: "GB",
+  dewiki: "DE",
+  elwiki: "GR",
+  enwiki: "GB",
+  eswiki: "ES",
+  frwiki: "FR",
+  hewiki: "IL",
+  hiwiki: "IN",
+  huwiki: "HU",
+  idwiki: "ID",
+  itwiki: "IT",
+  jawiki: "JP",
+  kowiki: "KR",
+  ltwiki: "LT",
+  nlwiki: "NL",
+  papwiki: "NL",
+  plwiki: "PL",
+  ptwiki: "PT",
+  rowiki: "RO",
+  ruwiki: "RU",
+  svwiki: "SE",
+  tawiki: "IN",
+  thwiki: "TH",
+  trwiki: "TR",
+  ttwiki: "RU",
+  ukwiki: "UA",
+  urwiki: "PK",
+  viwiki: "VN",
+  zhwiki: "CN"
 };
 
-
 /* =========================
-   ÉTAT GLOBAL
+   ETAT GLOBAL
 ========================= */
 let RAW_EVENTS = [];
 let countryStats = {};
@@ -69,9 +72,16 @@ let countryWikis = {};
 let countryLayer = null;
 
 const counterEl = document.getElementById("counter");
+const statusEl = document.getElementById("status");
+const rateEl = document.getElementById("rate");
 
 let showBots = true;
 let showHumans = true;
+
+// Stats pour le debit
+let eventCount = 0;
+let lastCountTime = Date.now();
+let currentRate = 0;
 
 /* =========================
    CONTROLS
@@ -98,10 +108,7 @@ function getCountryColor(count, thresholds) {
 }
 
 function getCountryName(props) {
-  return (
-    props.name ||
-    "Pays inconnu"
-  );
+  return props.name || "Pays inconnu";
 }
 
 /* =========================
@@ -120,7 +127,7 @@ fetch("/data/countries.geo.json")
       onEachFeature: (feature, layer) => {
         const name = getCountryName(feature.properties);
         layer.bindTooltip(
-          `<b>${name}</b><br>Événements : 0`,
+          `<b>${name}</b><br>Evenements : 0`,
           { sticky: true }
         );
       }
@@ -128,37 +135,73 @@ fetch("/data/countries.geo.json")
   });
 
 /* =========================
-   LOAD DATA
+   WEBSOCKET LIVE
 ========================= */
-fetch("/data/recentchange_180s.json")
-  .then(res => res.json())
-  .then(events => {
-    RAW_EVENTS = events;
-    replayEvents(events);
-  });
+function connectWebSocket() {
+  const wsUrl = `ws://${window.location.host}`;
+  const ws = new WebSocket(wsUrl);
 
-/* =========================
-   REPLAY (SIMULATION LIVE)
-========================= */
-function replayEvents(events) {
-  let index = 0;
-  const SPEED_MS = 30;
+  ws.onopen = () => {
+    console.log("[WS] Connecte au serveur");
+    if (statusEl) statusEl.textContent = "LIVE";
+    if (statusEl) statusEl.classList.add("live");
+  };
 
-  const interval = setInterval(() => {
-    if (index >= events.length) {
-      clearInterval(interval);
-      return;
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      handleEvent(data);
+    } catch (err) {
+      console.error("[WS] Erreur parsing:", err);
     }
+  };
 
-    RAW_EVENTS[index].__played = true;
-    index++;
+  ws.onclose = () => {
+    console.log("[WS] Deconnecte, reconnexion dans 3s...");
+    if (statusEl) statusEl.textContent = "DECONNECTE";
+    if (statusEl) statusEl.classList.remove("live");
+    setTimeout(connectWebSocket, 3000);
+  };
 
-    recompute();
-  }, SPEED_MS);
+  ws.onerror = (err) => {
+    console.error("[WS] Erreur:", err);
+    ws.close();
+  };
 }
 
 /* =========================
-   RECOMPUTE (CŒUR DATA-VIZ)
+   HANDLE EVENT (LIVE)
+========================= */
+function handleEvent(e) {
+  // Ajouter aux evenements bruts
+  RAW_EVENTS.push(e);
+  
+  // Limiter la taille du buffer (garder les 5000 derniers)
+  if (RAW_EVENTS.length > 5000) {
+    RAW_EVENTS = RAW_EVENTS.slice(-5000);
+  }
+  
+  // Marquer comme joue
+  e.__played = true;
+  
+  // Incrementer le compteur
+  eventCount++;
+  
+  // Recalculer le debit toutes les secondes
+  const now = Date.now();
+  if (now - lastCountTime >= 1000) {
+    currentRate = eventCount;
+    eventCount = 0;
+    lastCountTime = now;
+    if (rateEl) rateEl.textContent = currentRate;
+  }
+  
+  // Mettre a jour la carte
+  recompute();
+}
+
+/* =========================
+   RECOMPUTE (COEUR DATA-VIZ)
 ========================= */
 function recompute() {
   countryStats = {};
@@ -219,8 +262,13 @@ function recompute() {
 
     layer.setTooltipContent(
       `<b>${name}</b><br>
-       Événements : ${count}<br>
+       Evenements : ${count}<br>
        Wikis : ${wikis}`
     );
   });
 }
+
+/* =========================
+   DEMARRAGE
+========================= */
+connectWebSocket();

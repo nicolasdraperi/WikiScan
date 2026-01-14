@@ -27,12 +27,13 @@ legend.addTo(map);
 ========================= */
 const wikiLocations = {
   // 🌍 Wikipédia par langue
+
   arwiki: [31.8, 35.2],          // Monde arabe
-  arywiki: [31.8, -7.1],         // Maroc
+  arywiki: [31.8, -7.1],         // Maroc (arabe marocain)
   cywiki: [52.1, -3.8],          // Pays de Galles
   dewiki: [51.1, 10.4],          // Allemagne
   elwiki: [39.1, 21.8],          // Grèce
-  enwiki: [51.5, -0.09],         // Monde anglophone (UK)
+  enwiki: [51.5, -0.09],         // Communauté anglophone (point symbolique UK)
   eswiki: [40.4, -3.7],          // Espagne
   frwiki: [46.6, 2.2],           // France
   hewiki: [31.0, 35.0],          // Israël
@@ -52,16 +53,18 @@ const wikiLocations = {
   ukwiki: [49.0, 31.4],          // Ukraine
   urwiki: [30.3, 69.3],          // Pakistan (Ourdou)
   viwiki: [14.1, 108.3],         // Vietnam
-  zhwiki: [35.8, 104.1],         // Monde sinophone (Chine)
+  zhwiki: [35.8, 104.1]          // Monde sinophone
+};
+
 /*
-  // 📚 Wiktionary
+  // Wiktionary
   dewiktionary: [51.1, 10.4],
   enwiktionary: [51.5, -0.09],
   frwiktionary: [46.6, 2.2],
   idwiktionary: [-2.5, 118.0],
-  kuwiktionary: [36.5, 44.0],    // Kurdistan
-  mgwiktionary: [-18.8, 47.5],   // Madagascar
-  swwiktionary: [-6.4, 35.5],    // Swahili
+  kuwiktionary: [36.5, 44.0],
+  mgwiktionary: [-18.8, 47.5],
+  swwiktionary: [-6.4, 35.5],
   trwiktionary: [39.0, 35.2],
 
   // Wikiquote / Wikisource / Wikinews
@@ -71,12 +74,12 @@ const wikiLocations = {
   ukwikisource: [49.0, 31.4],
 
   // Projets transverses
-  commonswiki: [0, 0],           // Wikimedia Commons (global)
-  metawiki: [0, 0],              // Meta-Wiki
-  labswiki: [0, 0],              // Wikitech
-  wikidatawiki: [0, 0]           // Wikidata (global)
+  commonswiki: [0, 0],
+  metawiki: [0, 0],
+  labswiki: [0, 0],
+  wikidatawiki: [0, 0]
 */
-};
+
 
 
 /* =========================
@@ -107,7 +110,7 @@ document.getElementById("showHumans").addEventListener("change", e => {
 /* =========================
    DATA LOAD
 ========================= */
-fetch("/data/recentchange_15s.json")
+fetch("/data/recentchange_180s.json")
   .then(res => res.json())
   .then(events => {
     RAW_EVENTS = events;

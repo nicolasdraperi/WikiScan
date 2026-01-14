@@ -3,8 +3,8 @@ import json
 import time
 
 URL = "https://stream.wikimedia.org/v2/stream/recentchange"
-OUTPUT_FILE = "recentchange_15s.json"
-DURATION_SECONDS = 15
+OUTPUT_FILE = "recentchange_180s.json"
+DURATION_SECONDS = 180
 
 headers = {
     "Accept": "text/event-stream",

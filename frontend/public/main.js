@@ -1,3 +1,6 @@
+/* =========================
+   MAP INIT
+========================= */
 const map = L.map("map").setView([20, 0], 2);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -12,10 +15,11 @@ const legend = L.control({ position: "bottomright" });
 legend.onAdd = function () {
   const div = L.DomUtil.create("div", "legend");
   div.innerHTML = `
-    <h4>Activité</h4>
-    <div><span style="background: green"></span> 1–5 événements</div>
-    <div><span style="background: orange"></span> 6–15 événements</div>
-    <div><span style="background: red"></span> +15 événements</div>
+    <h4>Activité Wikipédia</h4>
+    <div><span style="background:#e5f5e0"></span> 1–4</div>
+    <div><span style="background:#a1d99b"></span> 5–14</div>
+    <div><span style="background:#41ab5d"></span> 15–29</div>
+    <div><span style="background:#006d2c"></span> 30+</div>
   `;
   return div;
 };
@@ -23,72 +27,46 @@ legend.onAdd = function () {
 legend.addTo(map);
 
 /* =========================
-   WIKI → COORDONNÉES
+   WIKI → PAYS (ISO_A2_EH)
 ========================= */
-const wikiLocations = {
-  // 🌍 Wikipédia par langue
-
-  arwiki: [31.8, 35.2],          // Monde arabe
-  arywiki: [31.8, -7.1],         // Maroc (arabe marocain)
-  cywiki: [52.1, -3.8],          // Pays de Galles
-  dewiki: [51.1, 10.4],          // Allemagne
-  elwiki: [39.1, 21.8],          // Grèce
-  enwiki: [51.5, -0.09],         // Communauté anglophone (point symbolique UK)
-  eswiki: [40.4, -3.7],          // Espagne
-  frwiki: [46.6, 2.2],           // France
-  hewiki: [31.0, 35.0],          // Israël
-  hiwiki: [22.9, 78.9],          // Inde (Hindi)
-  huwiki: [47.1, 19.5],          // Hongrie
-  idwiki: [-2.5, 118.0],         // Indonésie
-  itwiki: [42.8, 12.5],          // Italie
-  jawiki: [36.2, 138.2],         // Japon
-  ltwiki: [55.2, 23.9],          // Lituanie
-  nlwiki: [52.1, 5.3],           // Pays-Bas
-  papwiki: [12.2, -69.0],        // Papiamento (Caraïbes)
-  rowiki: [45.9, 24.9],          // Roumanie
-  ruwiki: [61.5, 105.3],         // Russie
-  tawiki: [10.8, 78.7],          // Tamil (Inde)
-  trwiki: [39.0, 35.2],          // Turquie
-  ttwiki: [55.8, 49.1],          // Tatarstan
-  ukwiki: [49.0, 31.4],          // Ukraine
-  urwiki: [30.3, 69.3],          // Pakistan (Ourdou)
-  viwiki: [14.1, 108.3],         // Vietnam
-  zhwiki: [35.8, 104.1]          // Monde sinophone
+const wikiToCountry = {
+  arwiki: "EG",      // Égypte (monde arabe, symbolique)
+  arywiki: "MA",     // Maroc
+  cywiki: "GB",      // Pays de Galles → Royaume-Uni
+  dewiki: "DE",      // Allemagne
+  elwiki: "GR",      // Grèce
+  enwiki: "GB",      // Communauté anglophone (symbolique UK)
+  eswiki: "ES",      // Espagne
+  frwiki: "FR",      // France
+  hewiki: "IL",      // Israël
+  hiwiki: "IN",      // Inde
+  huwiki: "HU",      // Hongrie
+  idwiki: "ID",      // Indonésie
+  itwiki: "IT",      // Italie
+  jawiki: "JP",      // Japon
+  ltwiki: "LT",      // Lituanie
+  nlwiki: "NL",      // Pays-Bas
+  papwiki: "NL",     // Curaçao → Pays-Bas (symbolique)
+  rowiki: "RO",      // Roumanie
+  ruwiki: "RU",      // Russie
+  tawiki: "IN",      // Tamil → Inde
+  trwiki: "TR",      // Turquie
+  ttwiki: "RU",      // Tatar → Russie (symbolique)
+  ukwiki: "UA",      // Ukraine
+  urwiki: "PK",      // Pakistan
+  viwiki: "VN",      // Vietnam
+  zhwiki: "CN"       // Chine
 };
-
-/*
-  // Wiktionary
-  dewiktionary: [51.1, 10.4],
-  enwiktionary: [51.5, -0.09],
-  frwiktionary: [46.6, 2.2],
-  idwiktionary: [-2.5, 118.0],
-  kuwiktionary: [36.5, 44.0],
-  mgwiktionary: [-18.8, 47.5],
-  swwiktionary: [-6.4, 35.5],
-  trwiktionary: [39.0, 35.2],
-
-  // Wikiquote / Wikisource / Wikinews
-  enwikiquote: [51.5, -0.09],
-  plwikisource: [52.2, 21.0],
-  ptwikinews: [-14.2, -51.9],
-  ukwikisource: [49.0, 31.4],
-
-  // Projets transverses
-  commonswiki: [0, 0],
-  metawiki: [0, 0],
-  labswiki: [0, 0],
-  wikidatawiki: [0, 0]
-*/
-
 
 
 /* =========================
    ÉTAT GLOBAL
 ========================= */
 let RAW_EVENTS = [];
-let FILTERED_EVENTS = [];
+let countryStats = {};
+let countryWikis = {};
+let countryLayer = null;
 
-const wikiMarkers = {};
 const counterEl = document.getElementById("counter");
 
 let showBots = true;
@@ -108,7 +86,48 @@ document.getElementById("showHumans").addEventListener("change", e => {
 });
 
 /* =========================
-   DATA LOAD
+   UTILS
+========================= */
+function getCountryColor(count) {
+  if (count === 0) return "#eeeeee";
+  if (count < 5) return "#e5f5e0";
+  if (count < 15) return "#a1d99b";
+  if (count < 30) return "#41ab5d";
+  return "#006d2c";
+}
+
+function getCountryName(props) {
+  return (
+    props.name ||
+    "Pays inconnu"
+  );
+}
+
+/* =========================
+   LOAD GEOJSON
+========================= */
+fetch("/data/countries.geo.json")
+  .then(res => res.json())
+  .then(geojson => {
+    countryLayer = L.geoJSON(geojson, {
+      style: () => ({
+        fillColor: "#eeeeee",
+        weight: 1,
+        color: "#555",
+        fillOpacity: 0.7
+      }),
+      onEachFeature: (feature, layer) => {
+        const name = getCountryName(feature.properties);
+        layer.bindTooltip(
+          `<b>${name}</b><br>Événements : 0`,
+          { sticky: true }
+        );
+      }
+    }).addTo(map);
+  });
+
+/* =========================
+   LOAD DATA
 ========================= */
 fetch("/data/recentchange_180s.json")
   .then(res => res.json())
@@ -118,16 +137,7 @@ fetch("/data/recentchange_180s.json")
   });
 
 /* =========================
-   UTILS
-========================= */
-function getColor(count) {
-  if (count < 5) return "green";
-  if (count < 15) return "orange";
-  return "red";
-}
-
-/* =========================
-   REPLAY (1 seule fois)
+   REPLAY (SIMULATION LIVE)
 ========================= */
 function replayEvents(events) {
   let index = 0;
@@ -147,47 +157,50 @@ function replayEvents(events) {
 }
 
 /* =========================
-   RECOMPUTE (LE CŒUR)
+   RECOMPUTE (CŒUR DATA-VIZ)
 ========================= */
 function recompute() {
-  // Nettoyage
-  for (const key in wikiMarkers) {
-    map.removeLayer(wikiMarkers[key]);
-    delete wikiMarkers[key];
-  }
+  countryStats = {};
+  countryWikis = {};
 
-  const wikiStats = {};
-  let total = 0;
+  RAW_EVENTS.forEach(e => {
+    if (!e.__played) return;
+    if (e.bot && !showBots) return;
+    if (!e.bot && !showHumans) return;
 
-  FILTERED_EVENTS = RAW_EVENTS.filter(e => {
-    if (!e.__played) return false;
-    if (e.bot && !showBots) return false;
-    if (!e.bot && !showHumans) return false;
-    if (!wikiLocations[e.wiki]) return false;
-    return true;
+    const country = wikiToCountry[e.wiki];
+    if (!country) return;
+
+    countryStats[country] = (countryStats[country] || 0) + 1;
+
+    if (!countryWikis[country]) {
+      countryWikis[country] = new Set();
+    }
+    countryWikis[country].add(e.wiki);
   });
 
-  FILTERED_EVENTS.forEach(event => {
-    const wiki = event.wiki;
-    wikiStats[wiki] = (wikiStats[wiki] || 0) + 1;
-    total++;
+  counterEl.textContent = Object.values(countryStats)
+    .reduce((a, b) => a + b, 0);
+
+  if (!countryLayer) return;
+
+  countryLayer.eachLayer(layer => {
+    const code = layer.feature.properties.iso_a2_eh;
+    const count = countryStats[code] || 0;
+    const name = getCountryName(layer.feature.properties);
+
+    const wikis = countryWikis[code]
+      ? [...countryWikis[code]].join(", ")
+      : "Aucun";
+
+    layer.setStyle({
+      fillColor: getCountryColor(count)
+    });
+
+    layer.setTooltipContent(
+      `<b>${name}</b><br>
+       Événements : ${count}<br>
+       Wikis : ${wikis}`
+    );
   });
-
-  counterEl.textContent = total;
-
-  for (const wiki in wikiStats) {
-    const count = wikiStats[wiki];
-    const coords = wikiLocations[wiki];
-
-    wikiMarkers[wiki] = L.circleMarker(coords, {
-      radius: 6 + Math.log(count + 1) * 6,
-      color: getColor(count),
-      fillOpacity: 0.7
-    }).addTo(map);
-
-    wikiMarkers[wiki].bindPopup(`
-      <b>${wiki}</b><br>
-      Total événements : ${count}
-    `);
-  }
 }

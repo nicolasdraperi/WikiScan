@@ -27,6 +27,8 @@ ENV/
 # Docker
 # ======================
 .env
+*.env
+hadoop.env
 docker-compose.override.yml
 
 # ======================

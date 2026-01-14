@@ -15,14 +15,15 @@ const legend = L.control({ position: "bottomright" });
 legend.onAdd = function () {
   const div = L.DomUtil.create("div", "legend");
   div.innerHTML = `
-    <h4>Activité Wikipédia</h4>
-    <div><span style="background:#e5f5e0"></span> 1–4</div>
-    <div><span style="background:#a1d99b"></span> 5–14</div>
-    <div><span style="background:#41ab5d"></span> 15–29</div>
-    <div><span style="background:#006d2c"></span> 30+</div>
+    <h4>Activité relative</h4>
+    <div><span style="background:#e5f5e0"></span> Faible</div>
+    <div><span style="background:#a1d99b"></span> Moyenne</div>
+    <div><span style="background:#41ab5d"></span> Élevée</div>
+    <div><span style="background:#006d2c"></span> Très élevée</div>
   `;
   return div;
 };
+
 
 legend.addTo(map);
 
@@ -88,11 +89,11 @@ document.getElementById("showHumans").addEventListener("change", e => {
 /* =========================
    UTILS
 ========================= */
-function getCountryColor(count) {
+function getCountryColor(count, thresholds) {
   if (count === 0) return "#eeeeee";
-  if (count < 5) return "#e5f5e0";
-  if (count < 15) return "#a1d99b";
-  if (count < 30) return "#41ab5d";
+  if (count <= thresholds.q1) return "#e5f5e0";
+  if (count <= thresholds.q2) return "#a1d99b";
+  if (count <= thresholds.q3) return "#41ab5d";
   return "#006d2c";
 }
 
@@ -179,8 +180,27 @@ function recompute() {
     countryWikis[country].add(e.wiki);
   });
 
-  counterEl.textContent = Object.values(countryStats)
-    .reduce((a, b) => a + b, 0);
+  const values = Object.values(countryStats).sort((a, b) => a - b);
+
+  function quantile(arr, q) {
+    if (!arr.length) return 0;
+    const pos = (arr.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    return arr[base + 1] !== undefined
+      ? arr[base] + rest * (arr[base + 1] - arr[base])
+      : arr[base];
+  }
+
+  const thresholds = values.length
+    ? {
+        q1: quantile(values, 0.25),
+        q2: quantile(values, 0.50),
+        q3: quantile(values, 0.75)
+      }
+    : { q1: 0, q2: 0, q3: 0 };
+
+  counterEl.textContent = values.reduce((a, b) => a + b, 0);
 
   if (!countryLayer) return;
 
@@ -194,7 +214,7 @@ function recompute() {
       : "Aucun";
 
     layer.setStyle({
-      fillColor: getCountryColor(count)
+      fillColor: getCountryColor(count, thresholds)
     });
 
     layer.setTooltipContent(

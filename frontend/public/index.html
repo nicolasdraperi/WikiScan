@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Wikimedia Live Map</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header>
+  <h1>Wikimedia – Live Activity Map</h1>
+  <p>Relecture d’un flux réel (15 secondes)</p>
+</header>
+
+<div id="stats">
+  Événements traités : <span id="counter">0</span>
+</div>
+
+<div id="controls">
+  <label>
+    <input type="checkbox" id="showBots" checked />
+    Bots
+  </label>
+  <label>
+    <input type="checkbox" id="showHumans" checked />
+    Humains
+  </label>
+</div>
+
+
+<div id="map"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="main.js"></script>
+
+</body>
+</html>

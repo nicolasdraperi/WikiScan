@@ -24,15 +24,6 @@ ENV/
 .DS_Store
 
 # ======================
-# Data files (IMPORTANT)
-# ======================
-*.json
-*.parquet
-*.csv
-*.avro
-*.orc
-
-# ======================
 # Docker
 # ======================
 *.env
@@ -49,3 +40,13 @@ docker-compose.override.yml
 # OS
 # ======================
 Thumbs.db
+
+# ======================
+# Node.js
+# ======================
+node_modules/
+dist/
+npm-debug.log
+yarn-error.log
+
+

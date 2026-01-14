@@ -1,0 +1,54 @@
+ body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+header {
+  text-align: center;
+  padding: 10px;
+  background: #1e1e1e;
+  color: white;
+}
+
+#stats {
+  text-align: center;
+  padding: 5px;
+  font-weight: bold;
+}
+
+#map {
+  height: 70vh;  
+  width: 100%;
+}
+
+.legend {
+  background: white;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.legend h4 {
+  margin: 0 0 5px 0;
+  font-size: 13px;
+}
+
+.legend span {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+}
+
+#controls {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px;
+  background: #f4f4f4;
+  font-weight: bold;
+}
+#controls label {
+  cursor: pointer;
+}

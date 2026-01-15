@@ -127,3 +127,64 @@ header h1 {
   border-radius: 3px;
   vertical-align: middle;
 }
+/* =========================
+   STATS PAGE
+========================= */
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.stats-card {
+  background: #020617;
+  border-radius: 10px;
+  padding: 15px 20px;
+  box-shadow: 0 0 0 1px #1e293b;
+}
+
+.stats-card h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #4fc3f7;
+}
+
+.stats-card canvas {
+  max-height: 280px;
+}
+
+.stats-highlight {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.big-metric {
+  font-size: 3rem;
+  font-weight: bold;
+  color: #e94560;
+  margin: 10px 0 0;
+}
+/* =========================
+   NAVIGATION BUTTON
+========================= */
+
+.nav-button {
+  text-decoration: none;
+  background: linear-gradient(135deg, #e94560, #ff6b81);
+  color: white;
+  padding: 10px 18px;
+  border-radius: 25px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: all 0.25s ease;
+  box-shadow: 0 0 10px rgba(233, 69, 96, 0.4);
+}
+
+.nav-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
+}

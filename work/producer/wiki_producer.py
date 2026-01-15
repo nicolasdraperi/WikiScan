@@ -70,13 +70,13 @@ def create_kafka_producer():
                 acks='all',
                 retries=3
             )
-            print(f"✅ Connecté à Kafka ({KAFKA_BOOTSTRAP_SERVERS})")
+            print(f"Connecté à Kafka ({KAFKA_BOOTSTRAP_SERVERS})")
             return producer
         except Exception as e:
-            print(f"⚠️ Tentative {attempt + 1}/{max_retries} - Erreur connexion Kafka: {e}")
+            print(f"Tentative {attempt + 1}/{max_retries} - Erreur connexion Kafka: {e}")
             time.sleep(5)
     
-    raise Exception("❌ Impossible de se connecter à Kafka après plusieurs tentatives")
+    raise Exception("Impossible de se connecter à Kafka après plusieurs tentatives")
 
 
 def enrich_event(event):
@@ -134,7 +134,7 @@ def stream_to_kafka(producer):
         "User-Agent": "WikiScan-Producer/1.0 (Educational Project)"
     }
     
-    print(f"🌐 Connexion à {WIKIMEDIA_STREAM_URL}...")
+    print(f"Connexion à {WIKIMEDIA_STREAM_URL}...")
     
     event_count = 0
     start_time = time.time()
@@ -143,7 +143,7 @@ def stream_to_kafka(producer):
         try:
             with requests.get(WIKIMEDIA_STREAM_URL, headers=headers, stream=True, timeout=60) as response:
                 response.raise_for_status()
-                print("✅ Connecté au flux Wikimedia EventStreams")
+                print("Connecté au flux Wikimedia EventStreams")
                 
                 for line in response.iter_lines(decode_unicode=True):
                     if not line:
@@ -170,25 +170,25 @@ def stream_to_kafka(producer):
                             if event_count % 100 == 0:
                                 elapsed = time.time() - start_time
                                 rate = event_count / elapsed
-                                print(f"📊 {event_count} événements publiés ({rate:.1f}/sec) - Dernier: {enriched_event.get('wiki')} - {enriched_event.get('title', '')[:50]}")
+                                print(f"{event_count} événements publiés ({rate:.1f}/sec) - Dernier: {enriched_event.get('wiki')} - {enriched_event.get('title', '')[:50]}")
                         
                         except json.JSONDecodeError:
                             pass  # Ignorer les lignes mal formées
                         except Exception as e:
-                            print(f"⚠️ Erreur traitement événement: {e}")
+                            print(f"Erreur traitement événement: {e}")
         
         except requests.exceptions.RequestException as e:
-            print(f"⚠️ Connexion perdue: {e}")
-            print("🔄 Reconnexion dans 5 secondes...")
+            print(f"Connexion perdue: {e}")
+            print("Reconnexion dans 5 secondes...")
             time.sleep(5)
         except KeyboardInterrupt:
-            print(f"\n🛑 Arrêt demandé. Total: {event_count} événements publiés.")
+            print(f"\nArrêt demandé. Total: {event_count} événements publiés.")
             break
 
 
 def main():
     print("=" * 50)
-    print("🚀 WikiScan Producer - Démarrage")
+    print("WikiScan Producer - Démarrage")
     print("=" * 50)
     
     # Créer le producer Kafka
@@ -200,7 +200,7 @@ def main():
     finally:
         producer.flush()
         producer.close()
-        print("👋 Producer arrêté proprement.")
+        print("Producer arrêté proprement.")
 
 
 if __name__ == "__main__":

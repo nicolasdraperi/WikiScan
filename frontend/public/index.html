@@ -13,12 +13,21 @@
 <body>
 
 <header>
-  <h1>WikiScan - Live Activity Map</h1>
-  <div class="status-bar">
-    <span class="status-indicator" id="status">CONNECTING...</span>
-    <span class="rate-display"><span id="rate">0</span> evt/sec</span>
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <h1>WikiScan - Live Activity Map</h1>
+      <div class="status-bar">
+        <span class="status-indicator" id="status">CONNECTING...</span>
+        <span class="rate-display"><span id="rate">0</span> evt/sec</span>
+      </div>
+    </div>
+
+    <a href="stats.html" class="nav-button">
+      Voir les stats
+    </a>
   </div>
 </header>
+
 
 <div id="stats">
   Evenements traites : <span id="counter">0</span>

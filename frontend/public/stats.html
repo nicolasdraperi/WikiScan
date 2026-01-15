@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>WikiScan - Statistiques Live</title>
+
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f172a;
+      color: #e5e7eb;
+      margin: 0;
+    }
+
+    header {
+      padding: 20px;
+      background: #020617;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    header h1 {
+      margin: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+      gap: 20px;
+      padding: 20px;
+    }
+
+    .card {
+      background: #020617;
+      border-radius: 8px;
+      padding: 15px;
+      box-shadow: 0 0 0 1px #1e293b;
+    }
+
+    canvas {
+      max-height: 300px;
+    }
+
+    .status {
+      color: #22c55e;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>📊 WikiScan – Statistiques en temps réel</h1>
+  <div>Status : <span id="status" class="status">CONNECTING…</span></div>
+</header>
+
+<section class="grid">
+  <div class="card">
+    <h3>🌍 Part des wikis</h3>
+    <canvas id="wikiChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>🤖 Bots vs Humains</h3>
+    <canvas id="botChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>👤 Anonymes vs Comptes</h3>
+    <canvas id="anonChart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>📄 Pages les plus éditées</h3>
+    <canvas id="pagesChart"></canvas>
+  </div>
+</section>
+
+<script src="stats.js"></script>
+</body>
+</html>

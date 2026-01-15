@@ -120,7 +120,7 @@ WikiScan/
 ### Étape 1 : Cloner le projet
 
 ```bash
-git clone <url-du-repo>
+git clone https://github.com/nicolasdraperi/WikiScan
 cd WikiScan
 ```
 

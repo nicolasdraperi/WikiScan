@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>WikiScan - Live Activity Map</title>
+  <title>WikiScan – Live / Offline Map</title>
 
   <link
     rel="stylesheet"
@@ -13,53 +13,56 @@
 <body>
 
 <header>
-  <div style="display:flex; justify-content:space-between; align-items:center;">
+  <div class="header-content">
     <div>
-      <h1>WikiScan - Live Activity Map</h1>
+      <h1>🌍 WikiScan – Activity Map</h1>
       <div class="status-bar">
-        <span class="status-indicator" id="status">CONNECTING...</span>
-        <span class="rate-display"><span id="rate">0</span> evt/sec</span>
+        <span class="status-indicator" id="status">CONNECTING…</span>
+        <span class="rate-display">
+          <span id="rate">0</span> evt/sec
+        </span>
       </div>
     </div>
 
-    <a href="stats.html" class="nav-button">
-      Voir les stats
-    </a>
+    <div class="nav-actions">
+      <button onclick="switchMode('live')" class="nav-button">LIVE</button>
+      <button onclick="switchMode('offline')" class="nav-button">OFFLINE</button>
+      <a href="stats.html" class="nav-button secondary">Stats</a>
+    </div>
   </div>
 </header>
 
-
 <div id="stats">
-  Evenements traites : <span id="counter">0</span>
+  Événements affichés : <span id="counter">0</span>
 </div>
 
 <div id="controls">
-  <label>
-    <input type="checkbox" id="showBots" checked />
-    Bots
-  </label>
-  <label>
-    <input type="checkbox" id="showHumans" checked />
-    Humains
-  </label>
+  <div class="control-group">
+    <label>
+      <input type="checkbox" id="showBots" checked />
+      Bots
+    </label>
+    <label>
+      <input type="checkbox" id="showHumans" checked />
+      Humains
+    </label>
+  </div>
+
+  <div class="control-group">
+    <label>
+      <input type="radio" name="eventType" value="recentchange" checked />
+      Modifications
+    </label>
+    <label>
+      <input type="radio" name="eventType" value="page-create" />
+      Créations
+    </label>
+    <label>
+      <input type="radio" name="eventType" value="page-delete" />
+      Suppressions
+    </label>
+  </div>
 </div>
-<div id="event-filters">
-  <label>
-    <input type="radio" name="eventType" value="recentchange" checked />
-    Modifications
-  </label>
-
-  <label>
-    <input type="radio" name="eventType" value="page-create" />
-    Créations
-  </label>
-
-  <label>
-    <input type="radio" name="eventType" value="page-delete" />
-    Suppressions
-  </label>
-</div>
-
 
 <div id="map"></div>
 

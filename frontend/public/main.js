@@ -1,7 +1,7 @@
 /* =========================
    MAP INIT
 ========================= */
-const map = L.map("map").setView([20, 0], 2);
+const map = L.map("map").setView([0, 0], 2);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: "© OpenStreetMap"
@@ -42,6 +42,7 @@ let showBots = true;
 let showHumans = true;
 
 let selectedEventType = "recentchange"; // par défaut
+let MODE = "live"; // "live" | "offline"
 
 
 // Stats débit
@@ -64,9 +65,15 @@ document.getElementById("showHumans").addEventListener("change", e => {
 document.querySelectorAll('input[name="eventType"]').forEach(input => {
   input.addEventListener("change", e => {
     selectedEventType = e.target.value;
-    recompute();
+
+    if (MODE === "offline") {
+      loadOfflineData();
+    } else {
+      recompute();
+    }
   });
 });
+
 
 /* =========================
    UTILS
@@ -139,6 +146,8 @@ function connectWebSocket() {
    HANDLE EVENT
 ========================= */
 function handleEvent(e) {
+  if (MODE === "offline") return;
+
   console.log("EVENT:", e.event_source, e.wiki, e.country_code);
   RAW_EVENTS.push(e);
   if (RAW_EVENTS.length > 5000) RAW_EVENTS.shift();
@@ -154,6 +163,7 @@ function handleEvent(e) {
   recompute();
 }
 
+
 /* =========================
    RECOMPUTE (CORE DATA-VIZ)
 ========================= */
@@ -161,21 +171,25 @@ function recompute() {
   countryStats = {};
   countryWikis = {};
 
-  RAW_EVENTS.forEach(e => {
-    if (e.event_source !== selectedEventType) return;
+RAW_EVENTS.forEach(e => {
+  if (e.event_source !== selectedEventType) return;
+
+  if (MODE === "live") {
     if (e.bot && !showBots) return;
     if (!e.bot && !showHumans) return;
+  }
 
-    const country = e.country_code;
-    if (!country) return;
+  const country = e.country_code;
+  if (!country) return;
 
-    countryStats[country] = (countryStats[country] || 0) + 1;
+  countryStats[country] = (countryStats[country] || 0) + 1;
 
-    if (!countryWikis[country]) {
-      countryWikis[country] = new Set();
-    }
-    countryWikis[country].add(e.wiki);
-  });
+  if (!countryWikis[country]) {
+    countryWikis[country] = new Set();
+  }
+  countryWikis[country].add(e.wiki || "offline");
+});
+
 
   const values = Object.values(countryStats)
   .filter(v => v > 0)
@@ -228,3 +242,50 @@ function recompute() {
    START
 ========================= */
 connectWebSocket();
+
+/* =========================
+    OFFLINE DATA
+========================= */
+async function loadOfflineData() {
+  const res = await fetch(`/api/offline/${selectedEventType}/by_country`);
+  const data = await res.json();
+
+  RAW_EVENTS = [];
+
+  data.forEach(row => {
+    for (let i = 0; i < row.count; i++) {
+      RAW_EVENTS.push({
+        country_code: row.country_code,
+        wiki: "offline",
+        bot: false,
+        event_source: selectedEventType
+      });
+    }
+  });
+
+  recompute();
+}
+function switchMode(mode) {
+  MODE = mode;
+
+  if (MODE === "offline") {
+    statusEl.textContent = "OFFLINE";
+    statusEl.classList.remove("live");
+    rateEl.textContent = "-";
+
+    document.getElementById("showBots").disabled = true;
+    document.getElementById("showHumans").disabled = true;
+
+    loadOfflineData();
+  } else {
+    statusEl.textContent = "LIVE";
+    statusEl.classList.add("live");
+
+    document.getElementById("showBots").disabled = false;
+    document.getElementById("showHumans").disabled = false;
+
+    RAW_EVENTS = [];
+  }
+}
+
+

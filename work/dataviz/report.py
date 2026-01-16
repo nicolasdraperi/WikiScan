@@ -4,8 +4,8 @@ from collections import Counter
 from pathlib import Path
 
 
-import numpy as np
-import matplotlib.pyplot as plt
+import numpy as np # type: ignore
+import matplotlib.pyplot as plt # type: ignore
 
 
 # ====== CONFIG ======

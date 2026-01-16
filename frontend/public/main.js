@@ -41,6 +41,9 @@ const rateEl = document.getElementById("rate");
 let showBots = true;
 let showHumans = true;
 
+let selectedEventType = "recentchange"; // par défaut
+
+
 // Stats débit
 let eventCount = 0;
 let lastCountTime = Date.now();
@@ -56,6 +59,13 @@ document.getElementById("showBots").addEventListener("change", e => {
 document.getElementById("showHumans").addEventListener("change", e => {
   showHumans = e.target.checked;
   recompute();
+});
+
+document.querySelectorAll('input[name="eventType"]').forEach(input => {
+  input.addEventListener("change", e => {
+    selectedEventType = e.target.value;
+    recompute();
+  });
 });
 
 /* =========================
@@ -129,6 +139,7 @@ function connectWebSocket() {
    HANDLE EVENT
 ========================= */
 function handleEvent(e) {
+  console.log("EVENT:", e.event_source, e.wiki, e.country_code);
   RAW_EVENTS.push(e);
   if (RAW_EVENTS.length > 5000) RAW_EVENTS.shift();
 
@@ -151,6 +162,7 @@ function recompute() {
   countryWikis = {};
 
   RAW_EVENTS.forEach(e => {
+    if (e.event_source !== selectedEventType) return;
     if (e.bot && !showBots) return;
     if (!e.bot && !showHumans) return;
 

@@ -188,3 +188,20 @@ header h1 {
   transform: translateY(-2px);
   box-shadow: 0 0 20px rgba(233, 69, 96, 0.8);
 }
+
+#event-filters {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  padding: 10px;
+  background: #16213e;
+  border-top: 1px solid #e94560;
+  font-weight: bold;
+}
+
+#event-filters label {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}

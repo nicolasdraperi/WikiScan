@@ -14,13 +14,19 @@ Stream source: https://stream.wikimedia.org/v2/stream/recentchange
 import json
 import time
 from datetime import datetime
-from kafka import KafkaProducer
+from kafka import KafkaProducer # type: ignore
 import requests
+import threading
 
 # ======================
 # CONFIGURATION
 # ======================
-WIKIMEDIA_STREAM_URL = "https://stream.wikimedia.org/v2/stream/recentchange"
+WIKIMEDIA_STREAM_URL = {
+    "recentchange": "https://stream.wikimedia.org/v2/stream/recentchange",
+    "page-create": "https://stream.wikimedia.org/v2/stream/page-create",
+    "page-delete": "https://stream.wikimedia.org/v2/stream/page-delete",
+}
+
 KAFKA_BOOTSTRAP_SERVERS = "kafka:9092"
 KAFKA_TOPIC_RAW = "wiki-raw"
 
@@ -79,7 +85,7 @@ def create_kafka_producer():
     raise Exception("Impossible de se connecter à Kafka après plusieurs tentatives")
 
 
-def enrich_event(event):
+def enrich_event(event, source):
     """
     Enrichit un événement avec des données calculées.
     
@@ -103,14 +109,32 @@ def enrich_event(event):
         enriched["delta_bytes"] = 0
         enriched["is_major_edit"] = False
     
-    # Language & Country
-    wiki = event.get("wiki", "")
-    if wiki.endswith("wiki"):
+    # ======================
+    # WIKI / LANGUAGE / COUNTRY (ROBUSTE)
+    # ======================
+
+    wiki = event.get("wiki")
+
+    # Cas page-create / page-delete
+    if not wiki:
+        wiki = event.get("database")
+
+    # Cas fallback via domain (sécurité)
+    if not wiki:
+        domain = event.get("meta", {}).get("domain", "")
+        if domain.endswith(".wikipedia.org"):
+            wiki = domain.replace(".wikipedia.org", "") + "wiki"
+
+    # Normalisation
+    if isinstance(wiki, str) and wiki.endswith("wiki"):
+        enriched["wiki"] = wiki
         enriched["language"] = wiki.replace("wiki", "")
     else:
-        enriched["language"] = wiki
-    
-    enriched["country_code"] = WIKI_TO_COUNTRY.get(wiki, None)
+        enriched["wiki"] = wiki
+        enriched["language"] = None
+
+    enriched["country_code"] = WIKI_TO_COUNTRY.get(enriched["wiki"])
+
     
     # Heure du jour
     timestamp = event.get("timestamp", 0)
@@ -120,66 +144,45 @@ def enrich_event(event):
         enriched["date"] = dt.strftime("%Y-%m-%d")
     
     # Timestamp de traitement
+    enriched["event_source"] = source 
     enriched["processed_at"] = datetime.utcnow().isoformat()
-    
     return enriched
 
 
-def stream_to_kafka(producer):
-    """
-    Lit le flux SSE Wikimedia et publie sur Kafka.
-    """
+def stream_to_kafka(producer, source, url):
     headers = {
         "Accept": "text/event-stream",
         "User-Agent": "WikiScan-Producer/1.0 (Educational Project)"
     }
-    
-    print(f"Connexion à {WIKIMEDIA_STREAM_URL}...")
-    
+
+    print(f"Connexion au stream [{source}]")
     event_count = 0
     start_time = time.time()
-    
     while True:
         try:
-            with requests.get(WIKIMEDIA_STREAM_URL, headers=headers, stream=True, timeout=60) as response:
+            with requests.get(url, headers=headers, stream=True, timeout=60) as response:
                 response.raise_for_status()
-                print("Connecté au flux Wikimedia EventStreams")
-                
+                print(f"Connecté au stream [{source}]")
+
                 for line in response.iter_lines(decode_unicode=True):
                     if not line:
                         continue
-                    
+
                     if line.startswith("data:"):
-                        data_str = line[5:].strip()  # Enlève "data:" 
-                        
                         try:
-                            event = json.loads(data_str)
-                            
-                            # Enrichir l'événement
-                            enriched_event = enrich_event(event)
-                            
-                            # Clé de partitionnement = wiki (ex: frwiki, enwiki)
-                            key = enriched_event.get("wiki", "unknown")
-                            
-                            # Publier sur Kafka
-                            producer.send(KAFKA_TOPIC_RAW, key=key, value=enriched_event)
-                            
-                            event_count += 1
-                            
-                            # Log toutes les 100 événements
-                            if event_count % 100 == 0:
-                                elapsed = time.time() - start_time
-                                rate = event_count / elapsed
-                                print(f"{event_count} événements publiés ({rate:.1f}/sec) - Dernier: {enriched_event.get('wiki')} - {enriched_event.get('title', '')[:50]}")
-                        
+                            event = json.loads(line[5:].strip())
+                            enriched = enrich_event(event, source)
+
+                            key = enriched.get("wiki", "unknown")
+                            producer.send(KAFKA_TOPIC_RAW, key=key, value=enriched)
+
                         except json.JSONDecodeError:
-                            pass  # Ignorer les lignes mal formées
+                            pass
                         except Exception as e:
-                            print(f"Erreur traitement événement: {e}")
-        
+                            print(f"[{source}] erreur: {e}")
+
         except requests.exceptions.RequestException as e:
-            print(f"Connexion perdue: {e}")
-            print("Reconnexion dans 5 secondes...")
+            print(f"[{source}] connexion perdue: {e}")
             time.sleep(5)
         except KeyboardInterrupt:
             print(f"\nArrêt demandé. Total: {event_count} événements publiés.")
@@ -188,19 +191,31 @@ def stream_to_kafka(producer):
 
 def main():
     print("=" * 50)
-    print("WikiScan Producer - Démarrage")
+    print("WikiScan Producer - Multi Stream")
     print("=" * 50)
-    
-    # Créer le producer Kafka
+
     producer = create_kafka_producer()
-    
+
+    threads = []
+
+    for source, url in WIKIMEDIA_STREAM_URL.items():
+        t = threading.Thread(
+            target=stream_to_kafka,
+            args=(producer, source, url),
+            daemon=True
+        )
+        t.start()
+        threads.append(t)
+
     try:
-        # Lancer le streaming
-        stream_to_kafka(producer)
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("Arrêt demandé")
     finally:
         producer.flush()
         producer.close()
-        print("Producer arrêté proprement.")
+
 
 
 if __name__ == "__main__":

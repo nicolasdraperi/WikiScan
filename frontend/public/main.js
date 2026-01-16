@@ -177,7 +177,10 @@ function recompute() {
     countryWikis[country].add(e.wiki);
   });
 
-  const values = Object.values(countryStats).sort((a, b) => a - b);
+  const values = Object.values(countryStats)
+  .filter(v => v > 0)
+  .sort((a, b) => a - b);
+
 
   const quantile = (arr, q) => {
     if (!arr.length) return 0;

@@ -196,9 +196,7 @@ hdfs://namenode:9000/wikiscan/events/
 
 Pour pouvoir utiliser le mode Offline :
 ```
-docker exec -it wikiscan-spark-master-1 \
-spark-submit \
-/home/jovyan/work/spark/wiki_spark_offline_stats.py
+docker exec -it wikiscan-spark-master-1 spark/bin/spark-submit /home/jovyan/work/spark/wiki_spark_offline_stats.py
 ```
 
 ---

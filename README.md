@@ -174,7 +174,7 @@ Ouvrir dans le navigateur : **http://localhost:3000**
 
 ---
 
-## 📊 Lancer Spark Streaming (Optionnel - Stockage HDFS)
+## 📊 Lancer Spark Streaming Stockage HDFS (Nécéssaire pour le mode offline)
 
 Pour sauvegarder les données dans HDFS :
 
@@ -192,6 +192,13 @@ hdfs://namenode:9000/wikiscan/events/
 ├── wiki=enwiki/
 │   └── event_date=2026-01-14/
 └── ...
+```
+
+Pour pouvoir utiliser le mode Offline :
+```
+docker exec -it wikiscan-spark-master-1 \
+spark-submit \
+/home/jovyan/work/spark/wiki_spark_offline_stats.py
 ```
 
 ---
